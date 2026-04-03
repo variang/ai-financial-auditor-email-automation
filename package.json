@@ -1,0 +1,42 @@
+{
+  "name": "ai-agent-support-email-automation",
+  "version": "0.1.0",
+  "description": "Gmail-triggered financial statement auditor with Google Sheets output.",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/variang/ai-financial-auditor-email-automation.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/variang/ai-financial-auditor-email-automation/issues"
+  },
+  "homepage": "https://github.com/variang/ai-financial-auditor-email-automation#readme",
+  "dependencies": {
+    "@langchain/langgraph": "^1.2.6",
+    "dotenv": "^17.4.0",
+    "googleapis": "^171.4.0",
+    "langsmith": "^0.5.16",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}
