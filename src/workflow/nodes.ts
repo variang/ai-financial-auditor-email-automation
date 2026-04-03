@@ -3,6 +3,7 @@ import type { ReplyPayload, StatementSummary } from "../domain/types.js";
 import type { LlmClient } from "../integrations/llm/client.js";
 import type { ReplyService } from "../integrations/reply/reply.js";
 import type { SheetsService } from "../integrations/sheets/service.js";
+import { metrics } from "../observability/metrics/prometheus.js";
 import type { WorkflowState } from "./state.js";
 
 function buildTabName(statementDate: string, cardNickname: string): string {
@@ -64,6 +65,7 @@ export async function runWorkflowSteps(
     reply: ReplyService;
   }
 ): Promise<WorkflowState> {
+  metrics.addTransactions(state.transactions.length);
   const summary = summarizeTransactions(state);
   const tabName = buildTabName(summary.statementDate, summary.cardNickname);
 
@@ -80,6 +82,7 @@ export async function runWorkflowSteps(
       cardNickname: transaction.cardNickname
     }))
   });
+  metrics.recordSheetUpsert();
 
   const nextState: WorkflowState = {
     ...state,
@@ -91,6 +94,7 @@ export async function runWorkflowSteps(
   if (config.autoReplyEnabled) {
     const reply = await composeReplyPayload(nextState, config, deps.llm);
     await deps.reply.send(reply);
+    metrics.recordReplySent();
     nextState.reply = reply;
   }
 

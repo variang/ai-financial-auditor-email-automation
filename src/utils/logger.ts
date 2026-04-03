@@ -1,7 +1,22 @@
+import winston from "winston";
+
 type LogLevel = "debug" | "info" | "warn" | "error";
 
 export class Logger {
-  constructor(private readonly level: string) {}
+  private readonly instance: winston.Logger;
+
+  constructor(level: string) {
+    this.instance = winston.createLogger({
+      level,
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.errors({ stack: true }),
+        winston.format.json()
+      ),
+      defaultMeta: { service: "email-financial-auditor" },
+      transports: [new winston.transports.Console()]
+    });
+  }
 
   info(message: string, fields?: Record<string, unknown>): void {
     this.log("info", message, fields);
@@ -16,17 +31,6 @@ export class Logger {
   }
 
   private log(level: LogLevel, message: string, fields?: Record<string, unknown>): void {
-    const ordered: LogLevel[] = ["debug", "info", "warn", "error"];
-    if (ordered.indexOf(level) < ordered.indexOf(this.level as LogLevel)) {
-      return;
-    }
-
-    const event = {
-      timestamp: new Date().toISOString(),
-      level,
-      message,
-      ...(fields ?? {})
-    };
-    console.log(JSON.stringify(event));
+    this.instance.log(level, message, fields ?? {});
   }
 }

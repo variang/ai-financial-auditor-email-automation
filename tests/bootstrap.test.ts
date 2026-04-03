@@ -24,6 +24,8 @@ describe("bootstrap", () => {
     process.env.TAB_DATE_FORMAT = "YYYY-MM";
     process.env.LANGSMITH_TRACING = "false";
     process.env.LANGSMITH_PROJECT = "test-project";
+    process.env.METRICS_ENABLED = "true";
+    process.env.METRICS_PORT = "9464";
     process.env.LLM_PROVIDER = "copilot";
     process.env.LLM_MODEL = "placeholder-model";
 

@@ -27,6 +27,14 @@ const envSchema = z.object({
     .transform((v) => v.toLowerCase() === "true"),
   LANGSMITH_API_KEY: z.string().optional(),
   LANGSMITH_PROJECT: z.string().default("email-financial-auditor"),
+  METRICS_ENABLED: z
+    .string()
+    .default("true")
+    .transform((v) => v.toLowerCase() === "true"),
+  METRICS_PORT: z
+    .string()
+    .default("9464")
+    .transform((v) => Number(v)),
   LLM_PROVIDER: z.string().default("copilot"),
   LLM_MODEL: z.string().default("placeholder-model")
 });
@@ -43,6 +51,8 @@ export type AppConfig = {
   langsmithTracing: boolean;
   langsmithApiKey?: string;
   langsmithProject: string;
+  metricsEnabled: boolean;
+  metricsPort: number;
   llmProvider: string;
   llmModel: string;
 };
@@ -68,6 +78,8 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     langsmithTracing: parsed.data.LANGSMITH_TRACING,
     langsmithApiKey: parsed.data.LANGSMITH_API_KEY,
     langsmithProject: parsed.data.LANGSMITH_PROJECT,
+    metricsEnabled: parsed.data.METRICS_ENABLED,
+    metricsPort: parsed.data.METRICS_PORT,
     llmProvider: parsed.data.LLM_PROVIDER,
     llmModel: parsed.data.LLM_MODEL
   };
