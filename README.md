@@ -44,6 +44,7 @@ npm run dev
 - `npm run typecheck`: Run TypeScript checks only
 - `npm run build`: Emit compiled JavaScript into dist
 - `npm test`: Run smoke tests
+- `npm run simulate`: Sends a mock Gmail Pub/Sub push payload to the running webhook server
 
 ## Metrics
 
@@ -55,7 +56,7 @@ Tracked metrics include workflow runs, duration, in-flight runs, transactions pr
 
 ## Planned Next Iterations
 
-- Replace Gmail trigger stub with real Pub/Sub webhook + watch renewal flow
-- Replace Sheets stub with real tab creation/writes
-- Add statement parser implementation using LLM provider adapter
-- Add idempotency + retry/backoff policy
+- [x] Replace Gmail trigger stub with real Pub/Sub webhook + watch renewal flow
+- [ ] Replace Sheets stub with real tab creation/writes
+- [ ] Add statement parser implementation using LLM provider adapter
+- [ ] Add idempotency + retry/backoff policy
