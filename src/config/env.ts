@@ -11,6 +11,7 @@ const envSchema = z.object({
   APP_LOG_LEVEL: z.string().default("info"),
   GOOGLE_OWNER_EMAIL: z.email(),
   GOOGLE_SPREADSHEET_ID: z.string().min(1, "GOOGLE_SPREADSHEET_ID is required"),
+  GOOGLE_CREDENTIALS_PATH: z.string().optional(),
   GMAIL_PUBSUB_TOPIC: z.string().min(1, "GMAIL_PUBSUB_TOPIC is required"),
   AUTO_REPLY_ENABLED: z
     .string()
@@ -42,6 +43,14 @@ const envSchema = z.object({
   PUBSUB_VERIFICATION_TOKEN: z.string().optional(),
   LLM_PROVIDER: z.string().default("copilot"),
   LLM_MODEL: z.string().default("placeholder-model")
+}).superRefine((data, ctx) => {
+  if (data.NODE_ENV !== "test" && !data.GOOGLE_CREDENTIALS_PATH) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["GOOGLE_CREDENTIALS_PATH"],
+      message: "GOOGLE_CREDENTIALS_PATH is required when NODE_ENV is not test"
+    });
+  }
 });
 
 export type AppConfig = {
@@ -49,6 +58,7 @@ export type AppConfig = {
   logLevel: string;
   ownerEmail: string;
   spreadsheetId: string;
+  googleCredentialsPath?: string;
   gmailPubSubTopic: string;
   autoReplyEnabled: boolean;
   replySummaryMaxLines: number;
@@ -78,6 +88,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     logLevel: parsed.data.APP_LOG_LEVEL,
     ownerEmail: parsed.data.GOOGLE_OWNER_EMAIL,
     spreadsheetId: parsed.data.GOOGLE_SPREADSHEET_ID,
+    googleCredentialsPath: parsed.data.GOOGLE_CREDENTIALS_PATH,
     gmailPubSubTopic: parsed.data.GMAIL_PUBSUB_TOPIC,
     autoReplyEnabled: parsed.data.AUTO_REPLY_ENABLED,
     replySummaryMaxLines: parsed.data.REPLY_SUMMARY_MAX_LINES,

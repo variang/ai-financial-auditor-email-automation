@@ -31,6 +31,7 @@ cp .env.example .env
 
 - `GOOGLE_OWNER_EMAIL`
 - `GOOGLE_SPREADSHEET_ID`
+- `GOOGLE_CREDENTIALS_PATH`
 - `GMAIL_PUBSUB_TOPIC`
 
 4. Run locally
@@ -59,6 +60,7 @@ gcloud pubsub topics create gmail-inbox-updates
 Set this topic in `.env`:
 
 - `GMAIL_PUBSUB_TOPIC=projects/YOUR_PROJECT_ID/topics/gmail-inbox-updates`
+- `GOOGLE_CREDENTIALS_PATH=/absolute/path/to/service-account.json`
 
 ### 3) Expose your local webhook publicly
 
@@ -170,6 +172,6 @@ Tracked metrics include workflow runs, duration, in-flight runs, transactions pr
 ## Planned Next Iterations
 
 - [x] Replace Gmail trigger stub with real Pub/Sub webhook + watch renewal flow
-- [ ] Replace Sheets stub with real tab creation/writes
+- [x] Replace Sheets stub with real tab creation/writes
 - [ ] Add statement parser implementation using LLM provider adapter
 - [ ] Add idempotency + retry/backoff policy
