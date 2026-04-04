@@ -151,4 +151,3 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   startWebhookServer(config, logger, createWorkflowRunner(config));
 }
-
