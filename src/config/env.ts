@@ -35,6 +35,11 @@ const envSchema = z.object({
     .string()
     .default("9464")
     .transform((v) => Number(v)),
+  WEBHOOK_PORT: z
+    .string()
+    .default("8080")
+    .transform((v) => Number(v)),
+  PUBSUB_VERIFICATION_TOKEN: z.string().optional(),
   LLM_PROVIDER: z.string().default("copilot"),
   LLM_MODEL: z.string().default("placeholder-model")
 });
@@ -53,6 +58,8 @@ export type AppConfig = {
   langsmithProject: string;
   metricsEnabled: boolean;
   metricsPort: number;
+  webhookPort: number;
+  pubSubVerificationToken?: string;
   llmProvider: string;
   llmModel: string;
 };
@@ -80,6 +87,8 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     langsmithProject: parsed.data.LANGSMITH_PROJECT,
     metricsEnabled: parsed.data.METRICS_ENABLED,
     metricsPort: parsed.data.METRICS_PORT,
+    webhookPort: parsed.data.WEBHOOK_PORT,
+    pubSubVerificationToken: parsed.data.PUBSUB_VERIFICATION_TOKEN,
     llmProvider: parsed.data.LLM_PROVIDER,
     llmModel: parsed.data.LLM_MODEL
   };
