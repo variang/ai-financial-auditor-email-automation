@@ -3,7 +3,11 @@ import type { AppConfig } from "./config/env.js";
 import type { GmailPushEvent } from "./domain/types.js";
 import type { WorkflowState } from "./workflow/state.js";
 import { StubLlmClient } from "./integrations/llm/client.js";
-import { StubReplyService } from "./integrations/reply/reply.js";
+import {
+  RealGmailReplyService,
+  StubReplyService,
+  type ReplyService
+} from "./integrations/reply/reply.js";
 import {
   RealSheetsService,
   StubSheetsService,
@@ -29,6 +33,18 @@ function createSheetsService(config: AppConfig): SheetsService {
   }
 
   return new RealSheetsService(config.googleCredentialsPath);
+}
+
+function createReplyService(config: AppConfig): ReplyService {
+  if (config.runtime === "test") {
+    return new StubReplyService();
+  }
+
+  if (!config.googleCredentialsPath) {
+    throw new Error("GOOGLE_CREDENTIALS_PATH is required for real Gmail integration");
+  }
+
+  return new RealGmailReplyService(config.googleCredentialsPath);
 }
 
 // Builds a hardcoded sample state used for testing and local bootstrapping.
@@ -86,6 +102,7 @@ function createWorkflowRunner(config: AppConfig) {
     ? new LangSmithTracingAdapter(config.langsmithApiKey, config.langsmithProject)
     : new NoopTracingAdapter();
   const sheets = createSheetsService(config);
+  const reply = createReplyService(config);
 
   return async (event: GmailPushEvent): Promise<void> => {
     const startTimeMs = metrics.recordWorkflowStart();
@@ -94,7 +111,7 @@ function createWorkflowRunner(config: AppConfig) {
         executeWorkflow(buildInitialStateFromEvent(event), config, {
           llm: new StubLlmClient(),
           sheets,
-          reply: new StubReplyService()
+          reply
         })
       );
       metrics.recordWorkflowSuccess(startTimeMs);
@@ -114,6 +131,7 @@ export async function bootstrap(): Promise<WorkflowState> {
     ? new LangSmithTracingAdapter(config.langsmithApiKey, config.langsmithProject)
     : new NoopTracingAdapter();
   const sheets = createSheetsService(config);
+  const reply = createReplyService(config);
 
   logger.info("bootstrapping-workflow", {
     runtime: config.runtime,
@@ -133,7 +151,7 @@ export async function bootstrap(): Promise<WorkflowState> {
       executeWorkflow(buildSampleState(), config, {
         llm: new StubLlmClient(),
         sheets,
-        reply: new StubReplyService()
+        reply
       })
     );
     metrics.recordWorkflowSuccess(startTimeMs);
