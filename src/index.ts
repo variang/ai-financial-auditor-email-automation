@@ -40,11 +40,29 @@ function createReplyService(config: AppConfig): ReplyService {
     return new StubReplyService();
   }
 
-  if (!config.googleCredentialsPath) {
-    throw new Error("GOOGLE_CREDENTIALS_PATH is required for real Gmail integration");
+  if (
+    config.googleOauthClientId &&
+    config.googleOauthClientSecret &&
+    config.googleOauthRefreshToken
+  ) {
+    return new RealGmailReplyService({
+      kind: "oauth",
+      clientId: config.googleOauthClientId,
+      clientSecret: config.googleOauthClientSecret,
+      refreshToken: config.googleOauthRefreshToken
+    });
   }
 
-  return new RealGmailReplyService(config.googleCredentialsPath);
+  if (!config.googleCredentialsPath) {
+    throw new Error(
+      "Gmail integration requires either GOOGLE_OAUTH_* credentials or GOOGLE_CREDENTIALS_PATH"
+    );
+  }
+
+  return new RealGmailReplyService({
+    kind: "service-account",
+    credentialsPath: config.googleCredentialsPath
+  });
 }
 
 // Builds a hardcoded sample state used for testing and local bootstrapping.

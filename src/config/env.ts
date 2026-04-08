@@ -12,6 +12,9 @@ const envSchema = z.object({
   GOOGLE_OWNER_EMAIL: z.email(),
   GOOGLE_SPREADSHEET_ID: z.string().min(1, "GOOGLE_SPREADSHEET_ID is required"),
   GOOGLE_CREDENTIALS_PATH: z.string().optional(),
+  GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_OAUTH_REFRESH_TOKEN: z.string().optional(),
   GMAIL_PUBSUB_TOPIC: z.string().min(1, "GMAIL_PUBSUB_TOPIC is required"),
   AUTO_REPLY_ENABLED: z
     .string()
@@ -51,6 +54,23 @@ const envSchema = z.object({
       message: "GOOGLE_CREDENTIALS_PATH is required when NODE_ENV is not test"
     });
   }
+
+  const oauthFields = [
+    data.GOOGLE_OAUTH_CLIENT_ID,
+    data.GOOGLE_OAUTH_CLIENT_SECRET,
+    data.GOOGLE_OAUTH_REFRESH_TOKEN
+  ];
+  const hasAnyOauthField = oauthFields.some((value) => value !== undefined);
+  const hasAllOauthFields = oauthFields.every((value) => value !== undefined);
+
+  if (hasAnyOauthField && !hasAllOauthFields) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["GOOGLE_OAUTH_CLIENT_ID"],
+      message:
+        "GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, and GOOGLE_OAUTH_REFRESH_TOKEN must all be set together"
+    });
+  }
 });
 
 export type AppConfig = {
@@ -59,6 +79,9 @@ export type AppConfig = {
   ownerEmail: string;
   spreadsheetId: string;
   googleCredentialsPath?: string;
+  googleOauthClientId?: string;
+  googleOauthClientSecret?: string;
+  googleOauthRefreshToken?: string;
   gmailPubSubTopic: string;
   autoReplyEnabled: boolean;
   replySummaryMaxLines: number;
@@ -89,6 +112,9 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     ownerEmail: parsed.data.GOOGLE_OWNER_EMAIL,
     spreadsheetId: parsed.data.GOOGLE_SPREADSHEET_ID,
     googleCredentialsPath: parsed.data.GOOGLE_CREDENTIALS_PATH,
+    googleOauthClientId: parsed.data.GOOGLE_OAUTH_CLIENT_ID,
+    googleOauthClientSecret: parsed.data.GOOGLE_OAUTH_CLIENT_SECRET,
+    googleOauthRefreshToken: parsed.data.GOOGLE_OAUTH_REFRESH_TOKEN,
     gmailPubSubTopic: parsed.data.GMAIL_PUBSUB_TOPIC,
     autoReplyEnabled: parsed.data.AUTO_REPLY_ENABLED,
     replySummaryMaxLines: parsed.data.REPLY_SUMMARY_MAX_LINES,

@@ -33,6 +33,9 @@ cp .env.example .env
 - `GOOGLE_SPREADSHEET_ID`
 - `GOOGLE_CREDENTIALS_PATH`
 - `GMAIL_PUBSUB_TOPIC`
+- `GOOGLE_OAUTH_CLIENT_ID` (required for personal Gmail send)
+- `GOOGLE_OAUTH_CLIENT_SECRET` (required for personal Gmail send)
+- `GOOGLE_OAUTH_REFRESH_TOKEN` (required for personal Gmail send)
 
 4. Run locally
 
@@ -106,6 +109,13 @@ gcloud pubsub topics add-iam-policy-binding gmail-inbox-updates \
 1. Create OAuth client credentials in Google Cloud (Desktop App or Web App).
 2. Add your mailbox as a test user if the consent screen is in testing mode.
 3. Request Gmail scopes and obtain an access token for the watched account.
+4. For personal-account sending in this app, store the OAuth client and refresh token in `.env`:
+
+```bash
+GOOGLE_OAUTH_CLIENT_ID=your-client-id
+GOOGLE_OAUTH_CLIENT_SECRET=your-client-secret
+GOOGLE_OAUTH_REFRESH_TOKEN=your-refresh-token
+```
 
 Common scopes used for this flow:
 

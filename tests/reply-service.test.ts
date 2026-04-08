@@ -4,24 +4,41 @@ import type { ReplyPayload } from "../src/domain/types.js";
 const mocks = vi.hoisted(() => {
   const send = vi.fn();
   const gmailFactory = vi.fn();
+  const oauthSetCredentials = vi.fn();
+  const googleAuthConstructor = vi.fn();
+  const oauthConstructor = vi.fn();
 
   return {
     send,
-    gmailFactory
+    gmailFactory,
+    oauthSetCredentials,
+    googleAuthConstructor,
+    oauthConstructor
   };
 });
 
 vi.mock("googleapis", () => {
   class GoogleAuth {
-    constructor(_options: unknown) {
-      // no-op for tests
+    constructor(options: unknown) {
+      mocks.googleAuthConstructor(options);
+    }
+  }
+
+  class OAuth2 {
+    constructor(clientId: string, clientSecret: string) {
+      mocks.oauthConstructor({ clientId, clientSecret });
+    }
+
+    setCredentials(credentials: unknown) {
+      mocks.oauthSetCredentials(credentials);
     }
   }
 
   return {
     google: {
       auth: {
-        GoogleAuth
+        GoogleAuth,
+        OAuth2
       },
       gmail: mocks.gmailFactory
     }
@@ -97,10 +114,17 @@ describe("RealGmailReplyService", () => {
   });
 
   it("sends Gmail message with base64url raw body", async () => {
-    const service = new RealGmailReplyService("/tmp/fake-credentials.json");
+    const service = new RealGmailReplyService({
+      kind: "service-account",
+      credentialsPath: "/tmp/fake-credentials.json"
+    });
 
     await service.send(PAYLOAD);
 
+    expect(mocks.googleAuthConstructor).toHaveBeenCalledWith({
+      keyFile: "/tmp/fake-credentials.json",
+      scopes: ["https://www.googleapis.com/auth/gmail.send"]
+    });
     expect(mocks.send).toHaveBeenCalledTimes(1);
     expect(mocks.send).toHaveBeenCalledWith({
       userId: "me",
@@ -112,7 +136,13 @@ describe("RealGmailReplyService", () => {
 
   it("skips send for invalid recipient and logs warning", async () => {
     const warn = vi.fn();
-    const service = new RealGmailReplyService("/tmp/fake-credentials.json", { warn });
+    const service = new RealGmailReplyService(
+      {
+        kind: "service-account",
+        credentialsPath: "/tmp/fake-credentials.json"
+      },
+      { warn }
+    );
 
     await service.send({
       ...PAYLOAD,
@@ -126,8 +156,31 @@ describe("RealGmailReplyService", () => {
   it("maps 403 errors to permission denied", async () => {
     mocks.send.mockRejectedValueOnce({ status: 403, message: "forbidden" });
 
-    const service = new RealGmailReplyService("/tmp/fake-credentials.json");
+    const service = new RealGmailReplyService({
+      kind: "service-account",
+      credentialsPath: "/tmp/fake-credentials.json"
+    });
 
     await expect(service.send(PAYLOAD)).rejects.toThrow(/permission denied \(403\)/i);
+  });
+
+  it("uses OAuth refresh token when configured", async () => {
+    const service = new RealGmailReplyService({
+      kind: "oauth",
+      clientId: "oauth-client-id",
+      clientSecret: "oauth-client-secret",
+      refreshToken: "oauth-refresh-token"
+    });
+
+    await service.send(PAYLOAD);
+
+    expect(mocks.oauthConstructor).toHaveBeenCalledWith({
+      clientId: "oauth-client-id",
+      clientSecret: "oauth-client-secret"
+    });
+    expect(mocks.oauthSetCredentials).toHaveBeenCalledWith({
+      refresh_token: "oauth-refresh-token"
+    });
+    expect(mocks.send).toHaveBeenCalledTimes(1);
   });
 });

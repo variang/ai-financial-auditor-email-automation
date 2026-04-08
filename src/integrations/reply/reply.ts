@@ -5,6 +5,18 @@ export interface ReplyService {
   send(payload: ReplyPayload): Promise<void>;
 }
 
+export type GmailReplyAuthConfig =
+  | {
+      kind: "service-account";
+      credentialsPath: string;
+    }
+  | {
+      kind: "oauth";
+      clientId: string;
+      clientSecret: string;
+      refreshToken: string;
+    };
+
 function sanitizeHeaderValue(value: string): string {
   return value.replace(/[\r\n]+/g, " ").trim();
 }
@@ -54,13 +66,10 @@ export class RealGmailReplyService implements ReplyService {
   private readonly client: gmail_v1.Gmail;
 
   constructor(
-    credentialsPath: string,
+    authConfig: GmailReplyAuthConfig,
     private readonly logger: Pick<Console, "warn"> = console
   ) {
-    const auth = new google.auth.GoogleAuth({
-      keyFile: credentialsPath,
-      scopes: ["https://www.googleapis.com/auth/gmail.send"]
-    });
+    const auth = this.createAuthClient(authConfig);
     this.client = google.gmail({ version: "v1", auth });
   }
 
@@ -86,6 +95,22 @@ export class RealGmailReplyService implements ReplyService {
     } catch (error) {
       throw this.buildGmailError(error, "Failed to send Gmail reply");
     }
+  }
+
+  private createAuthClient(authConfig: GmailReplyAuthConfig) {
+    if (authConfig.kind === "oauth") {
+      const auth = new google.auth.OAuth2(
+        authConfig.clientId,
+        authConfig.clientSecret
+      );
+      auth.setCredentials({ refresh_token: authConfig.refreshToken });
+      return auth;
+    }
+
+    return new google.auth.GoogleAuth({
+      keyFile: authConfig.credentialsPath,
+      scopes: ["https://www.googleapis.com/auth/gmail.send"]
+    });
   }
 
   private buildGmailError(error: unknown, prefix: string): Error {
