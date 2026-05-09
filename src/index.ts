@@ -128,12 +128,12 @@ Total Purchases: $318.89`,
   };
 }
 
-export function buildInitialStateFromEvent(event: GmailPushEvent): WorkflowState {
+export function buildInitialStateFromEvent(event: GmailPushEvent, config: AppConfig): WorkflowState {
   const statementDate = new Date().toISOString().slice(0, 7); // YYYY-MM
   return {
     event,
-    recipientEmail: "unknown@placeholder.invalid",
-    cardNickname: "Unknown-Card",
+    recipientEmail: config.placeholderRecipientEmail,
+    cardNickname: config.placeholderCardNickname,
     statementDate,
     transactions: []
   };
@@ -152,7 +152,7 @@ function createWorkflowRunner(config: AppConfig, logger: Logger) {
     const startTimeMs = metrics.recordWorkflowStart();
     try {
       await tracing.withTrace("financial-audit-workflow", () =>
-        executeWorkflow(buildInitialStateFromEvent(event), config, {
+        executeWorkflow(buildInitialStateFromEvent(event, config), config, {
           llm,
           parser,
           sheets,

@@ -16,6 +16,8 @@ const envSchema = z.object({
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
   GOOGLE_OAUTH_REFRESH_TOKEN: z.string().optional(),
   GMAIL_PUBSUB_TOPIC: z.string().min(1, "GMAIL_PUBSUB_TOPIC is required"),
+  PLACEHOLDER_RECIPIENT_EMAIL: z.string().default("unknown@placeholder.invalid"),
+  PLACEHOLDER_CARD_NICKNAME: z.string().default("Unknown-Card"),
   AUTO_REPLY_ENABLED: z
     .string()
     .default("true")
@@ -86,6 +88,8 @@ export type AppConfig = {
   googleOauthClientSecret?: string;
   googleOauthRefreshToken?: string;
   gmailPubSubTopic: string;
+  placeholderRecipientEmail: string;
+  placeholderCardNickname: string;
   autoReplyEnabled: boolean;
   replySummaryMaxLines: number;
   tabDateFormat: string;
@@ -122,6 +126,8 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     googleOauthClientSecret: parsed.data.GOOGLE_OAUTH_CLIENT_SECRET,
     googleOauthRefreshToken: parsed.data.GOOGLE_OAUTH_REFRESH_TOKEN,
     gmailPubSubTopic: parsed.data.GMAIL_PUBSUB_TOPIC,
+    placeholderRecipientEmail: parsed.data.PLACEHOLDER_RECIPIENT_EMAIL,
+    placeholderCardNickname: parsed.data.PLACEHOLDER_CARD_NICKNAME,
     autoReplyEnabled: parsed.data.AUTO_REPLY_ENABLED,
     replySummaryMaxLines: parsed.data.REPLY_SUMMARY_MAX_LINES,
     tabDateFormat: parsed.data.TAB_DATE_FORMAT,
