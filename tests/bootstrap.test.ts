@@ -27,7 +27,6 @@ describe("bootstrap", () => {
     process.env.METRICS_ENABLED = "true";
     process.env.METRICS_PORT = "9464";
     process.env.WEBHOOK_PORT = "8080";
-    process.env.LLM_PROVIDER = "copilot";
     process.env.LLM_MODEL = "placeholder-model";
 
     const state = await bootstrap();

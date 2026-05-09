@@ -71,12 +71,7 @@ function createLlmClient(config: AppConfig, logger: Logger) {
     return new StubLlmClient();
   }
 
-  if (config.llmProvider === "copilot") {
-    return new OpenAiLlmClient(config, logger);
-  }
-
-  logger.warn("llm-provider-unknown", { provider: config.llmProvider });
-  return new StubLlmClient();
+  return new OpenAiLlmClient(config, logger);
 }
 
 // Builds a hardcoded sample state used for testing and local bootstrapping.
@@ -187,7 +182,6 @@ export async function bootstrap(): Promise<WorkflowState> {
     autoReplyEnabled: config.autoReplyEnabled,
     metricsEnabled: config.metricsEnabled,
     metricsPort: config.metricsPort,
-    llmProvider: config.llmProvider,
     llmModel: config.llmModel
   });
 

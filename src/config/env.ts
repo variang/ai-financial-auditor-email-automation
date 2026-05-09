@@ -46,7 +46,6 @@ const envSchema = z.object({
     .default("8080")
     .transform((v) => Number(v)),
   PUBSUB_VERIFICATION_TOKEN: z.string().optional(),
-  LLM_PROVIDER: z.string().default("copilot"),
   LLM_MODEL: z.string().default("gpt-4"),
   AZURE_OPENAI_API_KEY: z.string().optional(),
   AZURE_OPENAI_ENDPOINT: z.string().optional(),
@@ -100,7 +99,6 @@ export type AppConfig = {
   metricsPort: number;
   webhookPort: number;
   pubSubVerificationToken?: string;
-  llmProvider: string;
   llmModel: string;
   azureOpenaiApiKey?: string;
   azureOpenaiEndpoint?: string;
@@ -138,7 +136,6 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     metricsPort: parsed.data.METRICS_PORT,
     webhookPort: parsed.data.WEBHOOK_PORT,
     pubSubVerificationToken: parsed.data.PUBSUB_VERIFICATION_TOKEN,
-    llmProvider: parsed.data.LLM_PROVIDER,
     llmModel: parsed.data.LLM_MODEL,
     azureOpenaiApiKey: parsed.data.AZURE_OPENAI_API_KEY,
     azureOpenaiEndpoint: parsed.data.AZURE_OPENAI_ENDPOINT,
