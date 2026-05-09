@@ -1,6 +1,35 @@
 import type { StatementTransaction } from "../../domain/types.js";
 import type { Logger } from "../../utils/logger.js";
-import type { LlmClient } from "./client.js";
+import type { LlmClient, LlmResponseSchema } from "./client.js";
+
+const STATEMENT_RESPONSE_SCHEMA: LlmResponseSchema = {
+  name: "statement_transactions",
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["transactions", "parseErrors"],
+    properties: {
+      transactions: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["id", "merchant", "amount", "postedDateIso"],
+          properties: {
+            id: { type: "string" },
+            merchant: { type: "string" },
+            amount: { type: "number" },
+            postedDateIso: { type: "string" }
+          }
+        }
+      },
+      parseErrors: {
+        type: "array",
+        items: { type: "string" }
+      }
+    }
+  }
+};
 
 export interface ParseStatementInput {
   pdfText: string;
@@ -25,28 +54,17 @@ export class StatementParser {
     const truncatedPdfText = pdfText.substring(0, maxPdfLength);
 
     const instruction = `Extract all transactions from this credit card statement PDF text.
-Return a JSON object with two fields:
-{
-  "transactions": [
-    {
-      "id": "unique_id",
-      "cardNickname": "${cardNickname}",
-      "merchant": "merchant name",
-      "amount": 123.45,
-      "postedDateIso": "2026-04-15T00:00:00Z",
-      "statementDate": "${statementDate}"
-    }
-  ],
-  "parseErrors": ["list of any parsing errors or warnings"]
-}
+The response must conform to the provided JSON schema (statement_transactions).
 
-Rules:
-- Extract transaction amounts as positive numbers (absolute values)
-- Parse dates in the statement and convert to ISO format with time 00:00:00Z
-- If a date cannot be parsed, use the statement date
-- Id should be deterministic based on merchant, amount, and date (e.g. hash or concatenation)
-- Include all transactions, both purchases and credits
-- parseErrors should be empty if parsing is successful
+Field rules:
+- transactions[].id: deterministic identifier derived from merchant, amount, and date (e.g. concatenation or hash). Must be unique within the response.
+- transactions[].merchant: trimmed merchant name as it appears on the statement.
+- transactions[].amount: positive number (absolute value), even for credits/refunds.
+- transactions[].postedDateIso: ISO-8601 timestamp with time 00:00:00Z. If the statement date cannot be parsed, fall back to "${statementDate}".
+- Include all transactions on the statement, both purchases and credits.
+- parseErrors: list any parsing warnings encountered; leave empty on a clean parse.
+
+Statement context: card "${cardNickname}", statement date "${statementDate}".
 
 Here is the statement text:
 ${truncatedPdfText}`;
@@ -58,7 +76,8 @@ ${truncatedPdfText}`;
           cardNickname,
           statementDate,
           pdfTextLength: pdfText.length
-        }
+        },
+        responseSchema: STATEMENT_RESPONSE_SCHEMA
       });
 
       let jsonText = response.text;

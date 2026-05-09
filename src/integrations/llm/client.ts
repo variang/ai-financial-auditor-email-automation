@@ -1,9 +1,15 @@
 import type { Logger } from "../../utils/logger.js";
 import type { AppConfig } from "../../config/env.js";
 
+export interface LlmResponseSchema {
+  name: string;
+  schema: Record<string, unknown>;
+}
+
 export interface LlmGenerateInput {
   instruction: string;
   context: Record<string, unknown>;
+  responseSchema?: LlmResponseSchema;
 }
 
 export interface LlmGenerateOutput {
@@ -63,18 +69,28 @@ export class OpenAiLlmClient implements LlmClient {
         }
       ];
 
-      const body = {
+      const body: Record<string, unknown> = {
         model: this.model,
         messages,
         temperature: 0.2,
         max_tokens: 2000
       };
 
+      if (input.responseSchema) {
+        body.response_format = {
+          type: "json_schema",
+          json_schema: {
+            name: input.responseSchema.name,
+            strict: true,
+            schema: input.responseSchema.schema
+          }
+        };
+      }
+
       const headers: Record<string, string> = {
         "Content-Type": "application/json"
       };
 
-      // Check if this is Azure OpenAI based on endpoint
       if (this.endpoint.includes("openai.azure.com")) {
         headers["api-key"] = this.apiKey;
       } else {
