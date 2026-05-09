@@ -45,7 +45,10 @@ const envSchema = z.object({
     .transform((v) => Number(v)),
   PUBSUB_VERIFICATION_TOKEN: z.string().optional(),
   LLM_PROVIDER: z.string().default("copilot"),
-  LLM_MODEL: z.string().default("placeholder-model")
+  LLM_MODEL: z.string().default("gpt-4"),
+  AZURE_OPENAI_API_KEY: z.string().optional(),
+  AZURE_OPENAI_ENDPOINT: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional()
 }).superRefine((data, ctx) => {
   if (data.NODE_ENV !== "test" && !data.GOOGLE_CREDENTIALS_PATH) {
     ctx.addIssue({
@@ -95,6 +98,9 @@ export type AppConfig = {
   pubSubVerificationToken?: string;
   llmProvider: string;
   llmModel: string;
+  azureOpenaiApiKey?: string;
+  azureOpenaiEndpoint?: string;
+  openaiApiKey?: string;
 };
 
 export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -127,6 +133,9 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     webhookPort: parsed.data.WEBHOOK_PORT,
     pubSubVerificationToken: parsed.data.PUBSUB_VERIFICATION_TOKEN,
     llmProvider: parsed.data.LLM_PROVIDER,
-    llmModel: parsed.data.LLM_MODEL
+    llmModel: parsed.data.LLM_MODEL,
+    azureOpenaiApiKey: parsed.data.AZURE_OPENAI_API_KEY,
+    azureOpenaiEndpoint: parsed.data.AZURE_OPENAI_ENDPOINT,
+    openaiApiKey: parsed.data.OPENAI_API_KEY
   };
 }

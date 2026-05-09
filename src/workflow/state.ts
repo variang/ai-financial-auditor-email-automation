@@ -10,6 +10,7 @@ export interface WorkflowState {
   recipientEmail: string;
   cardNickname: string;
   statementDate: string;
+  pdfText?: string;
   transactions: StatementTransaction[];
   summary?: StatementSummary;
   tabName?: string;

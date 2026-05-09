@@ -1,10 +1,35 @@
 import type { AppConfig } from "../config/env.js";
 import type { ReplyPayload, StatementSummary } from "../domain/types.js";
 import type { LlmClient } from "../integrations/llm/client.js";
+import type { StatementParser } from "../integrations/llm/statement-parser.js";
 import type { WorkflowState } from "./state.js";
 
 export function buildTabName(statementDate: string, cardNickname: string): string {
   return `${statementDate}_${cardNickname}`;
+}
+
+export async function parseStatementNode(
+  state: WorkflowState,
+  parser: StatementParser
+): Promise<WorkflowState> {
+  if (!state.pdfText) {
+    return state;
+  }
+
+  const result = await parser.parseStatementPdf({
+    pdfText: state.pdfText,
+    cardNickname: state.cardNickname,
+    statementDate: state.statementDate
+  });
+
+  if (result.parseErrors.length > 0) {
+    throw new Error(`Failed to parse statement: ${result.parseErrors.join("; ")}`);
+  }
+
+  return {
+    ...state,
+    transactions: result.transactions
+  };
 }
 
 export function summarizeTransactions(state: WorkflowState): StatementSummary {

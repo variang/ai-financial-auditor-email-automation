@@ -2,11 +2,13 @@ import { END, START, StateGraph } from "@langchain/langgraph";
 import { z } from "zod";
 import type { AppConfig } from "../config/env.js";
 import type { LlmClient } from "../integrations/llm/client.js";
+import type { StatementParser } from "../integrations/llm/statement-parser.js";
 import type { ReplyService } from "../integrations/reply/reply.js";
 import type { SheetsService } from "../integrations/sheets/service.js";
 import {
   buildTabName,
   composeReplyPayload,
+  parseStatementNode,
   summarizeTransactions
 } from "./nodes.js";
 import type { WorkflowState } from "./state.js";
@@ -14,6 +16,7 @@ import { metrics } from "../observability/metrics/prometheus.js";
 
 type GraphDependencies = {
   llm: LlmClient;
+  parser: StatementParser;
   sheets: SheetsService;
   reply: ReplyService;
 };
@@ -23,6 +26,7 @@ const workflowStateSchema = z.object({
   recipientEmail: z.string(),
   cardNickname: z.string(),
   statementDate: z.string(),
+  pdfText: z.string().optional(),
   transactions: z.array(z.any()),
   summary: z.any().optional(),
   tabName: z.string().optional(),
@@ -32,6 +36,11 @@ const workflowStateSchema = z.object({
 
 function createWorkflowGraph(config: AppConfig, deps: GraphDependencies) {
   const graph = new StateGraph(workflowStateSchema);
+
+  // Node 0: Parse Statement - extract transactions from PDF using LLM
+  graph.addNode("parseStatement", async (state: WorkflowState) => {
+    return await parseStatementNode(state, deps.parser);
+  });
 
   // Node 1: Ingest - record metrics for incoming transaction batch
   graph.addNode("ingest", (state: WorkflowState) => {
@@ -85,8 +94,9 @@ function createWorkflowGraph(config: AppConfig, deps: GraphDependencies) {
     return { ...state, reply };
   });
 
-  // Build execution path: START → ingest → summarize → upsertSheet → composeReply → END
-  (graph.addEdge as any)(START, "ingest");
+  // Build execution path: START → parseStatement → ingest → summarize → upsertSheet → composeReply → END
+  (graph.addEdge as any)(START, "parseStatement");
+  (graph.addEdge as any)("parseStatement", "ingest");
   (graph.addEdge as any)("ingest", "summarize");
   (graph.addEdge as any)("summarize", "upsertSheet");
   (graph.addEdge as any)("upsertSheet", "composeReply");
