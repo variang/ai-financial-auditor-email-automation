@@ -134,7 +134,7 @@ export function buildInitialStateFromEvent(event: GmailPushEvent, config: AppCon
   };
 }
 
-function createWorkflowRunner(config: AppConfig, logger: Logger) {
+function createWorkflowRunner(config: AppConfig, logger: Logger): (event: GmailPushEvent) => Promise<void> {
   const tracing: TracingAdapter = config.langsmithTracing
     ? new LangSmithTracingAdapter(config.langsmithApiKey, config.langsmithProject)
     : new NoopTracingAdapter();

@@ -25,9 +25,6 @@ export class GmailPushHandler {
   ) {}
 
   async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    // Verify optional push verification token.
-    // Configure the Pub/Sub subscription endpoint as:
-    //   https://yourapp.com/pubsub/push?token=<PUBSUB_VERIFICATION_TOKEN>
     if (this.config.pubSubVerificationToken) {
       const url = new URL(req.url ?? "/", "http://localhost");
       const token = url.searchParams.get("token");
@@ -46,8 +43,7 @@ export class GmailPushHandler {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.warn("push-handler-decode-failed", { message });
-      // 400 tells Pub/Sub this payload will never be valid — don't retry it.
-      res.writeHead(400).end(message);
+      res.writeHead(400).end(message); // Valid, no retry
       return;
     }
 
@@ -57,9 +53,7 @@ export class GmailPushHandler {
       receivedAtIso: event.receivedAtIso
     });
 
-    // Acknowledge immediately with 204 so Pub/Sub does not retry.
-    // The workflow runs asynchronously; we own retry and error handling internally.
-    res.writeHead(204).end();
+    res.writeHead(204).end(); // Ack, no retry
 
     try {
       await this.runWorkflow(event);
