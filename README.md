@@ -108,8 +108,8 @@ gcloud pubsub topics add-iam-policy-binding gmail-inbox-updates \
 
 1. Create OAuth client credentials in Google Cloud (Desktop App or Web App).
 2. Add your mailbox as a test user if the consent screen is in testing mode.
-3. Request Gmail scopes and obtain an access token for the watched account.
-4. For personal-account sending in this app, store the OAuth client and refresh token in `.env`:
+3. Generate a refresh token using the steps below.
+4. Store the OAuth client and refresh token in `.env`:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=your-client-id
@@ -120,6 +120,19 @@ GOOGLE_OAUTH_REFRESH_TOKEN=your-refresh-token
 Common scopes used for this flow:
 
 - `https://www.googleapis.com/auth/gmail.modify`
+
+#### Generating a refresh token via OAuth Playground
+
+1. Go to [https://developers.google.com/oauthplayground/](https://developers.google.com/oauthplayground/).
+2. Click the gear icon ⚙️ (top right), check **"Use your own OAuth credentials"**, and enter your `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`. Close the panel.
+3. Before doing this, make sure `https://developers.google.com/oauthplayground` is added as an **Authorized redirect URI** in your OAuth client in Google Cloud Console, otherwise you will get a redirect mismatch error.
+4. In the left panel under **Step 1**, find **Gmail API v1** and select the scope `https://www.googleapis.com/auth/gmail.modify`. Click **"Authorize APIs"**.
+5. Sign in with the Gmail account you want to watch. If your app is in **Testing** mode, this account must be listed as a test user in Google Cloud Console.
+6. On **Step 2**, click **"Exchange authorization code for tokens"**.
+7. Copy the `refresh_token` value from the JSON response on the right.
+8. Paste it into `.env` as `GOOGLE_OAUTH_REFRESH_TOKEN`.
+
+> **Note:** If your OAuth consent screen is in **Testing** mode, refresh tokens expire after 7 days. Either publish the app or re-generate the token periodically.
 
 ### 7) Register Gmail watch
 
