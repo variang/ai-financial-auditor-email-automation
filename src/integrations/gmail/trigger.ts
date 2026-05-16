@@ -61,8 +61,7 @@ export class GmailPushDecoder implements GmailTriggerPort {
       // messageId is the Pub/Sub message ID. The Gmail message ID is resolved
       // later via the History API using historyId.
       messageId: envelope.data.message.messageId,
-      // threadId is populated in a future step via Gmail History API.
-      threadId: "",
+      // threadId is filled in by the fetch service after messages.get.
       historyId: notification.data.historyId,
       receivedAtIso: envelope.data.message.publishTime
     };

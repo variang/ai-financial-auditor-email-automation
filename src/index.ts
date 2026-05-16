@@ -18,6 +18,11 @@ import { Logger } from "./utils/logger.js";
 import { executeWorkflow } from "./workflow/graph.js";
 import { metrics } from "./observability/metrics/prometheus.js";
 import {
+  RealGmailFetchService,
+  StubGmailFetchService,
+  type GmailFetchService
+} from "./integrations/gmail/client.js";
+import {
   LangSmithTracingAdapter,
   NoopTracingAdapter,
   type TracingAdapter
@@ -74,6 +79,39 @@ function createLlmClient(config: AppConfig, logger: Logger) {
   return new OpenAiLlmClient(config, logger);
 }
 
+function createGmailFetchService(config: AppConfig, logger: Logger): GmailFetchService {
+  if (config.runtime === "test") {
+    return new StubGmailFetchService();
+  }
+
+  if (
+    config.googleOauthClientId &&
+    config.googleOauthClientSecret &&
+    config.googleOauthRefreshToken
+  ) {
+    return new RealGmailFetchService(
+      {
+        kind: "oauth",
+        clientId: config.googleOauthClientId,
+        clientSecret: config.googleOauthClientSecret,
+        refreshToken: config.googleOauthRefreshToken
+      },
+      logger
+    );
+  }
+
+  if (!config.googleCredentialsPath) {
+    throw new Error(
+      "Gmail fetch integration requires either GOOGLE_OAUTH_* credentials or GOOGLE_CREDENTIALS_PATH"
+    );
+  }
+
+  return new RealGmailFetchService(
+    { kind: "service-account", credentialsPath: config.googleCredentialsPath },
+    logger
+  );
+}
+
 // Builds a hardcoded sample state used for testing and local bootstrapping.
 // Replace this with real Gmail History API fetching in the next iteration.
 function buildSampleState(): WorkflowState {
@@ -123,15 +161,47 @@ Total Purchases: $318.89`,
   };
 }
 
-export function buildInitialStateFromEvent(event: GmailPushEvent, config: AppConfig): WorkflowState {
+export async function buildInitialStateFromEvent(
+  event: GmailPushEvent,
+  config: AppConfig,
+  gmailFetch: GmailFetchService,
+  logger: Logger
+): Promise<WorkflowState> {
   const statementDate = new Date().toISOString().slice(0, 7); // YYYY-MM
-  return {
-    event,
-    recipientEmail: config.placeholderRecipientEmail,
-    cardNickname: config.placeholderCardNickname,
-    statementDate,
-    transactions: []
-  };
+
+  try {
+    const fetchResult = await gmailFetch.fetch({
+      historyId: event.historyId,
+      emailAddress: event.messageId
+    });
+
+    return {
+      event: {
+        ...event,
+        threadId: fetchResult.threadId
+      },
+      recipientEmail: fetchResult.recipientEmail,
+      cardNickname: fetchResult.cardNickname,
+      statementDate,
+      pdfText: fetchResult.pdfText,
+      transactions: []
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.warn("gmail-fetch-fallback", {
+      historyId: event.historyId,
+      message,
+      usingPlaceholders: true
+    });
+
+    return {
+      event,
+      recipientEmail: config.placeholderRecipientEmail,
+      cardNickname: config.placeholderCardNickname,
+      statementDate,
+      transactions: []
+    };
+  }
 }
 
 function createWorkflowRunner(config: AppConfig, logger: Logger): (event: GmailPushEvent) => Promise<void> {
@@ -142,12 +212,14 @@ function createWorkflowRunner(config: AppConfig, logger: Logger): (event: GmailP
   const reply = createReplyService(config);
   const llm = createLlmClient(config, logger);
   const parser = new StatementParser(llm, logger);
+  const gmailFetch = createGmailFetchService(config, logger);
 
   return async (event: GmailPushEvent): Promise<void> => {
     const startTimeMs = metrics.recordWorkflowStart();
     try {
+      const initialState = await buildInitialStateFromEvent(event, config, gmailFetch, logger);
       await tracing.withTrace("financial-audit-workflow", () =>
-        executeWorkflow(buildInitialStateFromEvent(event, config), config, {
+        executeWorkflow(initialState, config, {
           llm,
           parser,
           sheets,

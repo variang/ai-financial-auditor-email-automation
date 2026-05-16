@@ -2,7 +2,7 @@ export type RuntimeEnvironment = "development" | "test" | "production";
 
 export interface GmailPushEvent {
   messageId: string;
-  threadId: string;
+  threadId?: string;
   historyId: string;
   receivedAtIso: string;
 }

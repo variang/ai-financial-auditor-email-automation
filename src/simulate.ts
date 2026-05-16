@@ -13,7 +13,7 @@ const config = loadConfig();
 
 const gmailNotification = {
   emailAddress: config.ownerEmail,
-  historyId: 99999
+  historyId: 860418
 };
 
 const mockEnvelope = {
